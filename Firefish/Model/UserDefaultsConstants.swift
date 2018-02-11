@@ -7,3 +7,11 @@
 //
 
 import Foundation
+struct UserDefaultConstants {
+    
+    //user info
+    static let USER_NAME = "userName"
+    static let USER_TOKEN = "userToken"
+    static let USER_PASSWORD = "userPassword"
+
+}

@@ -13,7 +13,11 @@ class MainTabViewController: UITabBarController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        // Do any additional setup after loading the view.
+        if fromAdd {
+            self.selectedIndex = 1
+        }else{
+            self.selectedIndex = 0
+        }
     }
 
     override func didReceiveMemoryWarning() {

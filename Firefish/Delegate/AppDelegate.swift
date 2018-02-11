@@ -20,6 +20,24 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             statusBar.backgroundColor = UIColor(red: 68.0/255.0, green: 150.0/255.0, blue: 164.0/255.0, alpha: 1.0)
         }
         UIApplication.shared.statusBarStyle = .lightContent
+        let imageView = UIImageView(frame: CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width, height: 50.0))
+        imageView.contentMode = .scaleAspectFill
+        
+        // 4
+        let image = UIImage(named: "Banner")
+        imageView.image = image
+        UINavigationBar.appearance().addSubview(imageView)
+        
+        let userData = UserDefaultsData()
+        if userData.getUserToken() != ""{
+            let mainStoryboard: UIStoryboard = UIStoryboard(name: "Main", bundle: nil)
+            let centerViewController = mainStoryboard.instantiateViewController(withIdentifier: "MainNav") as! UINavigationController
+            window!.rootViewController = centerViewController
+        }else{
+            let mainStoryboard: UIStoryboard = UIStoryboard(name: "Main", bundle: nil)
+            let centerViewController = mainStoryboard.instantiateViewController(withIdentifier: "LoginViewController") as! LoginViewController
+            window!.rootViewController = centerViewController
+        }
         // Override point for customization after application launch.
         return true
     }

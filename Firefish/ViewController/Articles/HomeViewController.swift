@@ -9,16 +9,18 @@
 import UIKit
 import Alamofire
 
-class HomeViewController: UIViewController {
+class HomeViewController: UIViewController, UITextFieldDelegate {
 
+    @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
     @IBOutlet weak var searchText: UITextField!
     @IBOutlet weak var tableView: UITableView!
     var content = [HomeData]()
     var filteredContent = [HomeData]()
-    
+    var indexSelected = Int()
     override func viewDidLoad() {
         super.viewDidLoad()
         getItems()
+        self.searchText.delegate = self
         tableView.estimatedRowHeight = 50.0
         tableView.rowHeight = UITableViewAutomaticDimension
     }
@@ -40,35 +42,32 @@ class HomeViewController: UIViewController {
     @IBAction func didSearch(_ sender: Any) {
         didFilter()
     }
-    
+
     func didFilter() {
         if self.searchText.text! == "" {
             self.filteredContent = self.content
         }else{
             filteredContent = [HomeData]()
             for i in content {
-                if  i.name == self.searchText.text! {
-                    self.filteredContent.append(i)
+                var nameArray = [String]()
+                nameArray = i.name.components(separatedBy: " ")
+                for item in nameArray {
+                    if item.lowercased() == searchText.text!.lowercased() {
+                        if !filteredContent.contains(where: {$0.id == i.id}) {
+                            self.filteredContent.append(i)
+                        }
+                    }
                 }
             }
         }
-
         self.tableView.reloadData()
     }
     
-    func setPicker() {
-        let toolBar = UIToolbar()
-        toolBar.barStyle = UIBarStyle.default
-        toolBar.isTranslucent = true
-        toolBar.tintColor = UIColor.black
-        toolBar.sizeToFit()
+    
+    func textViewDidEndEditing(_ textView: UITextView) {
+        self.view.endEditing(true)
+        self.didFilter()
         
-        let doneButton = UIBarButtonItem(title: "Done", style: UIBarButtonItemStyle.plain, target: self, action: #selector(self.didSearch(_:)))
-        
-        toolBar.setItems([doneButton], animated: false)
-        toolBar.isUserInteractionEnabled = true
-        
-        self.searchText.inputAccessoryView = toolBar
     }
     
     //MARK:- To show and hide keyboard
@@ -77,13 +76,35 @@ class HomeViewController: UIViewController {
         self.view.endEditing(true)
     }
     
+    @objc func didSelectBtn(_ sender: UIButton) {
+        self.indexSelected = sender.tag
+        print("Filter = \(self.filteredContent[sender.tag].typePost)")
+        
+        if self.filteredContent[sender.tag].typePost == "article" {
+            let storyboard : UIStoryboard = UIStoryboard(name: "Main", bundle: nil)
+            let destViewController = storyboard.instantiateViewController(withIdentifier: "ArticleViewController") as! ArticleViewController
+            destViewController.id = self.filteredContent[sender.tag]
+            self.present(destViewController, animated: false, completion: nil)
+        } else if self.filteredContent[sender.tag].typePost == "video" {
+            let storyboard : UIStoryboard = UIStoryboard(name: "Main", bundle: nil)
+            let destViewController = storyboard.instantiateViewController(withIdentifier: "VideoViewController") as! VideoViewController
+            destViewController.id = self.filteredContent[sender.tag]
+            self.present(destViewController, animated: false, completion: nil)
+        }else if self.filteredContent[sender.tag].typePost == "image" {
+            let storyboard : UIStoryboard = UIStoryboard(name: "Main", bundle: nil)
+            let destViewController = storyboard.instantiateViewController(withIdentifier: "ImageViewController") as! ImageViewController
+            destViewController.id = self.filteredContent[sender.tag]
+            self.present(destViewController, animated: false, completion: nil)
+        }
+    }
+    
     //MARK:- Server integration
     func getItems() {
         self.content = [HomeData]()
-//        self.activityIndicator.isHidden = false
-//        self.activityIndicator.startAnimating()
+        self.activityIndicator.isHidden = false
+        self.activityIndicator.startAnimating()
         Alamofire.request(
-            "https://firefish.herokuapp.com/api/articles/mock/topics",
+            "https://firefish.herokuapp.com/api/articles/hack/articles",
             method: .get)
             .validate()
             .responseJSON { response in switch response.result {
@@ -93,16 +114,18 @@ class HomeViewController: UIViewController {
                     for item in response {
                         self.content.append(HomeData(id: item.value(forKey: "id") as! String,
                                                      name: item.value(forKey: "title") as! String,
-                                                     numComments: item.value(forKey: "comments") as! Int,
+                                                     numComments: 0,
                                                      datePublished: item.value(forKey: "published") as! String,
                                                      typePost: item.value(forKey: "type") as! String))
                     }
                     self.didFilter()
+                    self.activityIndicator.isHidden = true
+                    self.activityIndicator.stopAnimating()
                 }
             case .failure(let error):
-                print("Error = \(error.localizedDescription)")
-//                self.activityIndicator.isHidden = true
-//                self.activityIndicator.stopAnimating()
+                Alerts.showAlert(alertMessage: "", alertTitle: "No Articles piblished", viewController: self)
+                self.activityIndicator.isHidden = true
+                self.activityIndicator.stopAnimating()
                 break;
             }
         }
@@ -123,6 +146,19 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
         let cell = tableView.dequeueReusableCell(withIdentifier: "homeCell", for: indexPath) as! HomeCell
         cell.title.text! = self.filteredContent[indexPath.row].name
         cell.datePublished.text! = dateToString(format: "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", fromDate: self.filteredContent[indexPath.row].datePublished)
+        switch self.filteredContent[indexPath.row].typePost! {
+        case "video":
+            cell.photo.image = UIImage(named: "video")
+        case "article":
+            cell.photo.image = UIImage(named: "article")
+        case "image":
+            cell.photo.image = UIImage(named: "imageIcon")
+        default:
+            break;
+        }
+        cell.selectBtn.tag = indexPath.row
+        cell.selectBtn.addTarget(self, action: #selector(self.didSelectBtn(_:)), for: .touchUpInside)
         return cell
     }
+
 }
