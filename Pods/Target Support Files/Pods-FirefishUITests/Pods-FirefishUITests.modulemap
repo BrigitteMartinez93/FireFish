@@ -1,0 +1,6 @@
+framework module Pods_FirefishUITests {
+  umbrella header "Pods-FirefishUITests-umbrella.h"
+
+  export *
+  module * { export * }
+}
